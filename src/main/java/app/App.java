@@ -1,19 +1,22 @@
 package app;
 
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.schedulers.Schedulers;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
 public class App {
   public static void main(String[] args) {
-    Flowable<String> flowable = Flowable.create(new FlowableONSubscribe<String>() {
-      @Override
-      public void subscribe(FlowableEmitter<String> emitter) throws Exception {
-        String[] data = {"data1", "data2"};
-        for(String item : data) {
-          if (emitter.isCancelled()) {
-            return;
-          }
-          emitter.onNext(item);
+    Flowable<String> flowable = Flowable.create(emitter -> {
+      String[] data = {"data1", "data2"};
+      for(String item : data) {
+        if (emitter.isCancelled()) {
+          return;
         }
-        emitter.onComplete(); 
+        emitter.onNext(item);
       }
+      emitter.onComplete();
     }, BackpressureStrategy.BUFFER);
 
     flowable.observeOn(Schedulers.computation())
@@ -36,7 +39,7 @@ public class App {
               @Override
               public void onComplete() {
                 String threadName = Thread.currentThread().getName();
-                System.out.println(htreadName + " : DONE");
+                System.out.println(threadName + " : DONE");
               }
               
               @Override
@@ -44,6 +47,11 @@ public class App {
                 error.printStackTrace();
               }
           });
-    Thread.sleep(500L);
+
+      try {
+          Thread.sleep(500);
+      } catch (InterruptedException e) {
+          e.printStackTrace();
+      }
   }
 }
